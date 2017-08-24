@@ -983,6 +983,16 @@ if FDataCount = 0 then
     Chained_Decrypt_Block( FEmitBuffer, F2ndBuffer);
     FLenBuffer := 0;
     Sentinal   := PByte( MemStrmOffset( FEmitBuffer, FBlockLen - 1));
+
+    //Beim Kodieren wird immer auf volle Blocklänge (z.B. 8 bei Blowfish) aufgefüllt.
+    //Aufgefüllt wird mit $00. Bei Lockbox startet aber der Auffüllbereich mit $80 (PadIntroducer),
+    //bei BTools gibt es solch eine Kennzeichnung nicht.
+    //Der originale folgende Code durchsucht den letzten Block und markiert das Ende des dekodierten Strings,
+    //sobald er auf das PadIntroducer-Zeichen stößt.
+    //Um auch den BTools Code dekodieren zu können, wurde eine weitere Prüfung auf ein Nicht-Pad-Introducer-Zeichen
+    //eingeführt.
+    //ACHTUNG: die Logik ist nur als "Fallback" zu betrachten und schlägt fehl, wenn der mit BTools kodierte
+    //String zufällig auf $80 ('€') endete
     for j := FBlockLen - 1 downto 0 do
       begin
       if Sentinal^ = PadIntroducer then
@@ -990,7 +1000,18 @@ if FDataCount = 0 then
         FLenBuffer := j;
         break
         end;
-      Dec( Sentinal)
+      // Checking for character <> 0 --> encoded without PadIntroducer!!
+      // Background: Some libraries (eg BTools) do not encode with a PadIntroducer
+      // This additional check allows to decrypt this content as well.
+      // However: Decryption will fail if original content ends with the PadIntroducer
+      // character ($80 / '€')   /  This can only be solved if the padding of the
+      // encrypted string is known.
+      if Sentinal^ <> $00 then
+        begin
+        FLenBuffer := j + 1;
+        break;
+        end;
+      Dec( Sentinal);
       end;
     if FLenBuffer > 0 then
       FPlaintext.WriteBuffer( FEmitBuffer.Memory^, FLenBuffer)
