@@ -350,7 +350,11 @@ implementation
 
 uses Math, TPLB3.SHA1, TPLB3.ECB, TPLB3.Random, TPLB3.Decorators,
      TPLB3.BinaryUtils, TPLB3.I18n
-{$IF CompilerVersion >= 21}
+//original code was
+//{$IF CompilerVersion >= 21}
+//but this can lead to access violations in regard to this BUG: http://qc.embarcadero.com/wc/qcmain.aspx?d=98261
+//which is fixed in XE6 (CompilerVersion 26)
+{$IF CompilerVersion >= 26}
      , Rtti
 {$IFEND}
      ;
@@ -443,11 +447,13 @@ function isVariableSeedSize(
 // For Delphi 2010 and beyound, look for an IntegerRange range attribute
 //  on the SeedByteSize method.
 // For older compilers, test for the IVariableSeedSize interface.
+// Because of this bug: http://qc.embarcadero.com/wc/qcmain.aspx?d=98261
+// this was changed for all versions <XE6 too
 var
   ControlObject: IControlObject;
   Controller: TObject;
 
-{$IF compilerversion >= 21}
+{$IF compilerversion >= 26}
   LContext: TRttiContext;
   LType: TRttiType;
   Meth: TRttiMethod;
@@ -466,7 +472,7 @@ if assigned( ControlObject) then
     Controller := nil;
 if not assigned( Controller) then exit;
 
-{$IF compilerversion >= 21}
+{$IF compilerversion >= 26}
 IntRange := nil;
 LContext := TRttiContext.Create;
 try

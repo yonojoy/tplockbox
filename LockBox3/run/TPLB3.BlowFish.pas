@@ -39,14 +39,18 @@ const
   StoreBlowFishKeysAsExpanded = True;  // To do: Make this an option.
 
 type
-{$IF compilerversion >= 21}
+//original code was
+//{$IF CompilerVersion >= 21}
+//but this can lead to access violations in regard to this BUG: http://qc.embarcadero.com/wc/qcmain.aspx?d=98261
+//which is fixed in XE6 (CompilerVersion 26)
+{$IF compilerversion >= 26}
 {$RTTI EXPLICIT METHODS([vcPrivate, vcProtected, vcPublic, vcPublished]) PROPERTIES([vcPublished])}
 // Exposes the attribute on the SeedByteSize method.
 {$IFEND}
 
 TBlowFish = class( TInterfacedObject,
     IBlockCipher, ICryptoGraphicAlgorithm, IControlObject
-{$IF compilerversion < 21}
+{$IF compilerversion < 26}
     ,IVariableSeedSize
 {$IFEND}
     )
@@ -60,7 +64,7 @@ TBlowFish = class( TInterfacedObject,
     function  LoadKeyFromStream( Store: TStream): TSymetricKey;
     function  BlockSize: integer;  // in units of bits. Must be a multiple of 8.
 
-{$IF compilerversion >= 21}
+{$IF compilerversion >= 26}
     [IntegerRange( 8, 448)]
 {$IFEND}
     function  KeySize: integer;
@@ -72,7 +76,7 @@ TBlowFish = class( TInterfacedObject,
     //  IControlObject = interface
     function ControlObject: TObject;
 
-{$IF compilerversion >= 21}
+{$IF compilerversion >= 26}
     [IntegerRange( 1, 56)]
     function  SeedByteSize: integer; // This is now a nominal value,
       // not a must-be value.
@@ -86,7 +90,7 @@ TBlowFish = class( TInterfacedObject,
     constructor Create;
   end;
 
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 26}
 uint32 = cardinal;
 {$IFEND}
 
@@ -477,7 +481,7 @@ for i := 0 to 17 do
   begin
   for j := 0 to 3 do
     begin
-    {$IF CompilerVersion >= 21}
+    {$IF CompilerVersion >= 26}
     LongRec( T32).Bytes[ j] := KeyBytePntr[
       (k + 3 - j) mod longword( KeySizeInBytes)]
     {$ELSE}
@@ -615,7 +619,7 @@ begin
 result := (KeySize + 7) div 8
 end;
 
-{$IF compilerversion < 21}
+{$IF compilerversion < 26}
 // Equivalent to [IntegerRange( 1, 56)]
 function TBlowFish.MinSeedByteSize: integer;
 begin
@@ -809,7 +813,7 @@ FKey   := Key1
 end;
 
 
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 26}
 type Puint64 = ^uint64;
 {$IFEND}
 
